@@ -1,0 +1,16 @@
+// =======================================
+// LED Tester Sketch
+// =======================================
+
+#define LED_PIN 13   // Change if using different pin
+
+void setup() {
+  pinMode(LED_PIN, OUTPUT);
+}
+
+void loop() {
+  digitalWrite(LED_PIN, HIGH);  // LED ON
+  delay(500);
+  digitalWrite(LED_PIN, LOW);   // LED OFF
+  delay(500);
+}
