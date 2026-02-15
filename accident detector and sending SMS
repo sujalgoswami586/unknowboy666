@@ -1,0 +1,169 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include <SoftwareSerial.h>
+#include <AltSoftSerial.h>
+#include <TinyGPS++.h>
+#include <math.h>
+
+// ================= LCD =================
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+// ================= GSM =================
+#define GSM_RX 2
+#define GSM_TX 3
+SoftwareSerial sim800(GSM_RX, GSM_TX);
+
+// ================= GPS =================
+AltSoftSerial gpsSerial;
+TinyGPSPlus gps;
+
+// ================= PINS =================
+#define BUZZER 12
+#define BUTTON 11
+
+#define xPin A1
+#define yPin A2
+#define zPin A3
+
+// ================= CONFIG =================
+const String EMERGENCY_PHONE = "+911234567890";  // CHANGE THIS
+int sensitivity = 45;
+
+// ================= VARIABLES =================
+int xaxis, yaxis, zaxis;
+int oldx, oldy, oldz;
+int magnitude;
+bool crashDetected = false;
+unsigned long crashTime;
+unsigned long alertDelay = 30000; // 30 sec
+
+String latitude = "";
+String longitude = "";
+
+// ===================================================
+
+void setup() {
+  Serial.begin(9600);
+  sim800.begin(9600);
+  gpsSerial.begin(9600);
+
+  pinMode(BUZZER, OUTPUT);
+  pinMode(BUTTON, INPUT_PULLUP);
+
+  lcd.init();
+  lcd.backlight();
+  lcd.setCursor(0,0);
+  lcd.print("System Starting");
+  delay(2000);
+  lcd.clear();
+
+  xaxis = analogRead(xPin);
+  yaxis = analogRead(yPin);
+  zaxis = analogRead(zPin);
+}
+
+// ===================================================
+
+void loop() {
+
+  detectImpact();
+
+  if (crashDetected) {
+    if (millis() - crashTime >= alertDelay) {
+      digitalWrite(BUZZER, LOW);
+      getGPS();
+      sendSMS();
+      makeCall();
+      crashDetected = false;
+    }
+  }
+
+  if (digitalRead(BUTTON) == LOW) {
+    crashDetected = false;
+    digitalWrite(BUZZER, LOW);
+    lcd.clear();
+    lcd.print("Alert Cancelled");
+    delay(2000);
+    lcd.clear();
+  }
+}
+
+// ===================================================
+
+void detectImpact() {
+
+  oldx = xaxis;
+  oldy = yaxis;
+  oldz = zaxis;
+
+  xaxis = analogRead(xPin);
+  yaxis = analogRead(yPin);
+  zaxis = analogRead(zPin);
+
+  int dx = xaxis - oldx;
+  int dy = yaxis - oldy;
+  int dz = zaxis - oldz;
+
+  magnitude = sqrt(dx*dx + dy*dy + dz*dz);
+
+  if (magnitude >= sensitivity && !crashDetected) {
+    crashDetected = true;
+    crashTime = millis();
+    digitalWrite(BUZZER, HIGH);
+
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Crash Detected!");
+    lcd.setCursor(0,1);
+    lcd.print("Sending Alert...");
+  }
+}
+
+// ===================================================
+
+void getGPS() {
+
+  unsigned long start = millis();
+  while (millis() - start < 2000) {
+    while (gpsSerial.available()) {
+      gps.encode(gpsSerial.read());
+    }
+  }
+
+  if (gps.location.isValid()) {
+    latitude = String(gps.location.lat(), 6);
+    longitude = String(gps.location.lng(), 6);
+  } else {
+    latitude = "0.000000";
+    longitude = "0.000000";
+  }
+}
+
+// ===================================================
+
+void sendSMS() {
+
+  String message = "Accident Alert!!\n";
+  message += "Location:\n";
+  message += "http://maps.google.com/maps?q=loc:";
+  message += latitude + "," + longitude;
+
+  sim800.println("AT+CMGF=1");
+  delay(1000);
+  sim800.println("AT+CMGS=\"" + EMERGENCY_PHONE + "\"");
+  delay(1000);
+  sim800.print(message);
+  delay(100);
+  sim800.write(26);
+  delay(3000);
+
+  Serial.println("SMS Sent");
+}
+
+// ===================================================
+
+void makeCall() {
+  sim800.println("ATD" + EMERGENCY_PHONE + ";");
+  delay(20000);
+  sim800.println("ATH");
+}
