@@ -1,4 +1,4 @@
-# unknowboy666
+ii# unknowboy666
 # 🚗 Arduino Based Accident Alert System
 
 ## 📌 Project Description
@@ -155,3 +155,83 @@ http://maps.google.com/maps?q=loc:LATITUDE,LONGITUDE
 # 🔧 Code Configuration
 
 Update emergency number before uploading:
+Include country code.
+
+---
+
+# 🛠 Upload Instructions
+
+1. Connect Arduino Nano via USB.
+2. Select:
+   Tools → Board → Arduino Nano
+   Tools → Processor → ATmega328P (Old Bootloader if required)
+3. Select correct COM Port.
+4. Click Upload.
+
+---
+
+# 🔋 Power Requirements
+
+| Module | Voltage Requirement |
+|---------|-------------------|
+| Arduino Nano | 5V |
+| LCD | 5V |
+| GPS | 5V |
+| Accelerometer | 3.3V |
+| SIM800L | 3.8V–4.2V |
+
+---
+
+# 🧪 Testing Procedure
+
+1. Power system.
+2. Wait for GPS signal.
+3. Shake accelerometer strongly to simulate crash.
+4. Observe:
+   - Buzzer activates
+   - LCD shows crash
+   - Call is placed
+   - SMS received
+
+---
+
+# 🛑 Troubleshooting
+
+### LCD not working
+- Run I2C scanner
+- Check address (0x27 or 0x3F)
+
+### GSM not sending SMS
+- Check SIM balance
+- Check network signal
+- Ensure correct power supply
+
+### GPS not getting location
+- Keep module under open sky
+- Wait 1–2 minutes for first fix
+
+---
+
+# 📂 Project Structure
+
+Accident-Alert-System/
+│
+├── accident_alert.ino
+├── images/
+│   └── wiring_diagram.png
+└── README.md
+
+---
+
+# 🚀 Future Improvements
+
+- Add cloud IoT monitoring
+- Add mobile app integration
+- Add crash severity detection
+- Add gyroscope for direction analysis
+
+---
+
+# 📜 License
+
+This project is developed for educational and research purposes.
